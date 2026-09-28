@@ -4,7 +4,7 @@
 
 Desktop application built with Java for managing books, borrowers, and lending transactions.
 
-The project started as a college learning project and was later refactored to improve the database setup, validation, navigation, UI consistency, and overall project structure.
+The project started as a learning project and was later refactored to improve the database setup, validation, navigation, UI consistency, and overall project structure.
 
 ## Demo
 
