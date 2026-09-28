@@ -11,6 +11,7 @@ public class Main {
     private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 
     public static void main(String[] args) {
+        setLookAndFeel();
         try {
             DatabaseConnection.getInstance().initializeSchema();
         } catch (SQLException exception) {
@@ -20,6 +21,20 @@ public class Main {
                     "Database Error", JOptionPane.ERROR_MESSAGE));
             return;
         }
-        SwingUtilities.invokeLater(MainMenu::new);
+        SwingUtilities.invokeLater(LibraryAppFrame::new);
+    }
+
+    private static void setLookAndFeel() {
+        try {
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+        } catch (Exception crossPlatformException) {
+            LOGGER.log(Level.WARNING, "Cross-platform look and feel is unavailable", crossPlatformException);
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception systemException) {
+                LOGGER.log(Level.WARNING, "System look and feel is unavailable", systemException);
+            }
+        }
+        UiStyles.installThemeDefaults();
     }
 }

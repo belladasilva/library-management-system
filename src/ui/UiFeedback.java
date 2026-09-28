@@ -16,6 +16,10 @@ public final class UiFeedback {
         JOptionPane.showMessageDialog(parent, message, "Validation", JOptionPane.WARNING_MESSAGE);
     }
 
+    public static void showSuccess(Component parent, String message) {
+        JOptionPane.showMessageDialog(parent, message, "Success", JOptionPane.INFORMATION_MESSAGE);
+    }
+
     public static void showDatabaseError(Component parent, SQLException exception) {
         showDatabaseError(parent, exception,
                 "The database operation failed. Please try again or check the application log.");

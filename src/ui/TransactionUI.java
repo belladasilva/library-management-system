@@ -6,34 +6,57 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
 
-public class TransactionUI extends JFrame {
-    private BorrowedBookDAO dao = new BorrowedBookDAO();
-    private JTextField bookIdField, borrowerIdField;
+public class TransactionUI extends JPanel {
+    private final BorrowedBookDAO dao = new BorrowedBookDAO();
+    private final JTextField bookIdField;
+    private final JTextField borrowerIdField;
+    private final JLabel statusLabel;
 
-    public TransactionUI() {
-        setTitle("Borrow / Return");
-        setSize(400, 200);
-        setLocationRelativeTo(null);
+    public TransactionUI(Runnable showDashboard) {
+        super(new BorderLayout());
 
-        JPanel panel = new JPanel(new GridLayout(3, 2));
-        panel.add(new JLabel("Book ID:"));
         bookIdField = new JTextField();
-        panel.add(bookIdField);
-
-        panel.add(new JLabel("Borrower ID:"));
         borrowerIdField = new JTextField();
-        panel.add(borrowerIdField);
+        UiStyles.field(bookIdField);
+        UiStyles.field(borrowerIdField);
+        statusLabel = UiStyles.statusLabel("Ready to record a transaction.");
 
-        JButton borrowBtn = new JButton("Borrow");
+        JButton borrowBtn = UiStyles.button("Borrow", true);
         borrowBtn.addActionListener(e -> runTransaction(true));
-        JButton returnBtn = new JButton("Return");
+        JButton returnBtn = UiStyles.button("Return", false);
         returnBtn.addActionListener(e -> runTransaction(false));
 
-        panel.add(borrowBtn);
-        panel.add(returnBtn);
+        JPanel page = UiStyles.page();
+        page.add(UiStyles.screenHeader(showDashboard, "Borrow / Return",
+                "Manage lending transactions with a book and borrower ID."), BorderLayout.NORTH);
 
-        add(panel);
-        setVisible(true);
+        JPanel formPanel = UiStyles.card(new BorderLayout());
+        JPanel formContent = new JPanel();
+        formContent.setOpaque(false);
+        formContent.setLayout(new BoxLayout(formContent, BoxLayout.Y_AXIS));
+        UiStyles.addField(formContent, "Book ID", bookIdField);
+        UiStyles.addField(formContent, "Borrower ID", borrowerIdField);
+
+        JPanel actions = new JPanel(new GridLayout(1, 2, 12, 0));
+        actions.setOpaque(false);
+        actions.setAlignmentX(Component.LEFT_ALIGNMENT);
+        actions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        actions.add(borrowBtn);
+        actions.add(returnBtn);
+        formContent.add(actions);
+        formContent.add(Box.createVerticalStrut(14));
+        statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formContent.add(statusLabel);
+        formPanel.add(formContent, BorderLayout.NORTH);
+        page.add(formPanel, BorderLayout.CENTER);
+
+        add(page, BorderLayout.CENTER);
+    }
+
+    void onShow() {
+        bookIdField.setText("");
+        borrowerIdField.setText("");
+        UiStyles.updateStatus(statusLabel, "Ready to record a transaction.", false);
     }
 
     private void runTransaction(boolean borrow) {
@@ -43,23 +66,34 @@ public class TransactionUI extends JFrame {
             if (borrow) {
                 BorrowedBookDAO.BorrowResult result = dao.borrowBook(bookId, borrowerId);
                 switch (result) {
-                    case BORROWED -> JOptionPane.showMessageDialog(this, "Book borrowed successfully.");
-                    case BOOK_NOT_FOUND -> UiFeedback.showValidationError(this, "Book ID not found.");
-                    case BORROWER_NOT_FOUND -> UiFeedback.showValidationError(this, "Borrower ID not found.");
-                    case NO_COPIES -> UiFeedback.showValidationError(this, "No copies are available for this book.");
+                    case BORROWED -> showOutcome("Book borrowed successfully.", true);
+                    case BOOK_NOT_FOUND -> showOutcome("Book ID not found.", false);
+                    case BORROWER_NOT_FOUND -> showOutcome("Borrower ID not found.", false);
+                    case NO_COPIES -> showOutcome("No copies are available for this book.", false);
                 }
             } else {
                 BorrowedBookDAO.ReturnResult result = dao.returnBook(bookId, borrowerId);
                 if (result == BorrowedBookDAO.ReturnResult.RETURNED) {
-                    JOptionPane.showMessageDialog(this, "Book returned successfully.");
+                    showOutcome("Book returned successfully.", true);
                 } else {
-                    UiFeedback.showValidationError(this, "No active loan matches these IDs.");
+                    showOutcome("No active loan matches these IDs.", false);
                 }
             }
         } catch (IllegalArgumentException exception) {
+            UiStyles.updateStatus(statusLabel, exception.getMessage(), false);
             UiFeedback.showValidationError(this, exception.getMessage());
         } catch (SQLException exception) {
+            UiStyles.updateStatus(statusLabel, "The database operation failed.", false);
             UiFeedback.showDatabaseError(this, exception);
+        }
+    }
+
+    private void showOutcome(String message, boolean success) {
+        UiStyles.updateStatus(statusLabel, message, success);
+        if (success) {
+            UiFeedback.showSuccess(this, message);
+        } else {
+            UiFeedback.showValidationError(this, message);
         }
     }
 }
