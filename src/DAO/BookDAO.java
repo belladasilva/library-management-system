@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BookDAO {
-    public void addBook(Book book) {
+    public void addBook(Book book) throws SQLException {
         String sql = "INSERT INTO books(title, author, available_copies) VALUES (?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -17,12 +17,10 @@ public class BookDAO {
             stmt.setInt(3, book.getAvailableCopies());
             stmt.executeUpdate();
 
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
-    public void updateBook(Book book) {
+    public int updateBook(Book book) throws SQLException {
         String sql = "UPDATE books SET title = ?, author = ?, available_copies = ? WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -32,28 +30,24 @@ public class BookDAO {
             stmt.setString(2, book.getAuthor());
             stmt.setInt(3, book.getAvailableCopies());
             stmt.setInt(4, book.getId());
-            stmt.executeUpdate();
+            return stmt.executeUpdate();
 
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
-    public void deleteBook(int id) {
+    public int deleteBook(int id) throws SQLException {
         String sql = "DELETE FROM books WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
-            stmt.executeUpdate();
+            return stmt.executeUpdate();
 
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
-    public List<Book> getAllBooks() {
+    public List<Book> getAllBooks() throws SQLException {
         List<Book> books = new ArrayList<>();
         String sql = "SELECT * FROM books";
 
@@ -65,11 +59,8 @@ public class BookDAO {
                 books.add(new Book(rs.getInt("id"), rs.getString("title"), rs.getString("author"), rs.getInt("available_copies")));
             }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
 
         return books;
     }
 }
-

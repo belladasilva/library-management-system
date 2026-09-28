@@ -7,6 +7,11 @@ out/
 build/
 target/
 *.class
+production/
+
+# Local SQLite database
+library.db
+library.db-*
 
 # Logs
 *.log

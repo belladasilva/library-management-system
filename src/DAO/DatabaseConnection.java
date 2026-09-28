@@ -10,7 +10,6 @@ public class DatabaseConnection {
     private static final DatabaseConnection INSTANCE = new DatabaseConnection();
 
     private DatabaseConnection() {
-        initializeSchema();
     }
 
     public static DatabaseConnection getInstance() {
@@ -18,10 +17,23 @@ public class DatabaseConnection {
     }
 
     public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL);
+        Connection connection = DriverManager.getConnection(URL);
+        try {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("PRAGMA foreign_keys = ON");
+            }
+            return connection;
+        } catch (SQLException exception) {
+            try {
+                connection.close();
+            } catch (SQLException closeException) {
+                exception.addSuppressed(closeException);
+            }
+            throw exception;
+        }
     }
 
-    private void initializeSchema() {
+    public void initializeSchema() throws SQLException {
         String createBooks = "CREATE TABLE IF NOT EXISTS books ("
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "title TEXT NOT NULL, "
@@ -45,12 +57,10 @@ public class DatabaseConnection {
                 + "FOREIGN KEY (borrower_id) REFERENCES borrowers(id)"
                 + ")";
 
-        try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
-            stmt.execute(createBooks);
-            stmt.execute(createBorrowers);
-            stmt.execute(createBorrowedBooks);
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to initialize database schema.", e);
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
+            statement.execute(createBooks);
+            statement.execute(createBorrowers);
+            statement.execute(createBorrowedBooks);
         }
     }
 }

@@ -6,6 +6,7 @@ import Model.Borrower;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.sql.SQLException;
 import java.util.List;
 
 public class BorrowerUI extends JFrame {
@@ -45,54 +46,62 @@ public class BorrowerUI extends JFrame {
 
         JButton addBtn = new JButton("Add Borrower");
         addBtn.addActionListener(e -> {
-            String name = nameField.getText().trim();
-            String email = emailField.getText().trim();
-
-            if (name.isEmpty() || email.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Name and Email are required.", "Validation", JOptionPane.WARNING_MESSAGE);
-                return;
+            try {
+                String name = InputValidator.requiredText(nameField.getText(), "Name");
+                String email = InputValidator.email(emailField.getText());
+                dao.addBorrower(new Borrower(0, name, email));
+                nameField.setText("");
+                emailField.setText("");
+                refreshTable();
+            } catch (IllegalArgumentException exception) {
+                UiFeedback.showValidationError(this, exception.getMessage());
+            } catch (SQLException exception) {
+                UiFeedback.showDatabaseError(this, exception);
             }
-
-            dao.addBorrower(new Borrower(0, name, email));
-            nameField.setText("");
-            emailField.setText("");
-            refreshTable();
         });
 
         JButton deleteBtn = new JButton("Delete Selected");
         deleteBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
             if (row == -1) {
-                JOptionPane.showMessageDialog(this, "Select a borrower first.", "Validation", JOptionPane.WARNING_MESSAGE);
+                UiFeedback.showValidationError(this, "Select a borrower first.");
                 return;
             }
 
             int id = (int) model.getValueAt(row, 0);
-            dao.deleteBorrower(id);
-            nameField.setText("");
-            emailField.setText("");
-            refreshTable();
+            try {
+                if (dao.deleteBorrower(id) == 0) {
+                    UiFeedback.showValidationError(this, "That borrower no longer exists. Refresh the list.");
+                }
+                nameField.setText("");
+                emailField.setText("");
+                refreshTable();
+            } catch (SQLException exception) {
+                UiFeedback.showDeleteError(this, exception);
+            }
         });
 
         JButton editBtn = new JButton("Edit Selected");
         editBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
             if (row == -1) {
-                JOptionPane.showMessageDialog(this, "Select a borrower first.", "Validation", JOptionPane.WARNING_MESSAGE);
+                UiFeedback.showValidationError(this, "Select a borrower first.");
                 return;
             }
 
-            int id = (int) model.getValueAt(row, 0);
-            String name = nameField.getText().trim();
-            String email = emailField.getText().trim();
-
-            if (name.isEmpty() || email.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Name and Email are required.", "Validation", JOptionPane.WARNING_MESSAGE);
-                return;
+            try {
+                int id = (int) model.getValueAt(row, 0);
+                String name = InputValidator.requiredText(nameField.getText(), "Name");
+                String email = InputValidator.email(emailField.getText());
+                if (dao.updateBorrower(new Borrower(id, name, email)) == 0) {
+                    UiFeedback.showValidationError(this, "That borrower no longer exists. Refresh the list.");
+                }
+                refreshTable();
+            } catch (IllegalArgumentException exception) {
+                UiFeedback.showValidationError(this, exception.getMessage());
+            } catch (SQLException exception) {
+                UiFeedback.showDatabaseError(this, exception);
             }
-
-            dao.updateBorrower(new Borrower(id, name, email));
-            refreshTable();
         });
 
         JPanel btnPanel = new JPanel();
@@ -107,10 +116,14 @@ public class BorrowerUI extends JFrame {
     }
 
     private void refreshTable() {
-        model.setRowCount(0);
-        List<Borrower> borrowers = dao.getAllBorrowers();
-        for (Borrower b : borrowers) {
-            model.addRow(new Object[]{b.getId(), b.getName(), b.getEmail()});
+        try {
+            List<Borrower> borrowers = dao.getAllBorrowers();
+            model.setRowCount(0);
+            for (Borrower borrower : borrowers) {
+                model.addRow(new Object[]{borrower.getId(), borrower.getName(), borrower.getEmail()});
+            }
+        } catch (SQLException exception) {
+            UiFeedback.showDatabaseError(this, exception);
         }
     }
 }
