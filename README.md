@@ -10,7 +10,7 @@ The project started as a college learning project and was later refactored to im
 
 🎥 **Application walkthrough**
 
-[Watch the demo video](docs/media/library-demo.mp)
+[Watch the demo video](docs/media/library-demo.mp4)
 
 ## Features
 
@@ -34,9 +34,6 @@ The project started as a college learning project and was later refactored to im
 - DAO Pattern
 - Ready for JUnit 5 test expansion
 
-## Screenshot
-
-![Books Management](docs/media/books-screen.png)
 
 ## Project Structure
 
